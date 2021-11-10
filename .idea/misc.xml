@@ -3,7 +3,31 @@
   <component name="DesignSurface">
     <option name="filePathToZoomLevelMap">
       <map>
-        <entry key="app/src/main/res/layout/activity_main.xml" value="0.15070921985815602" />
+        <entry key="app/src/main/res/drawable-v24/ic_launcher_foreground.xml" value="0.1962962962962963" />
+        <entry key="app/src/main/res/drawable/circle.xml" value="0.20092592592592592" />
+        <entry key="app/src/main/res/drawable/ic_baseline_arrow_forward_ios_24.xml" value="0.22962962962962963" />
+        <entry key="app/src/main/res/drawable/ic_baseline_home_24.xml" value="0.20092592592592592" />
+        <entry key="app/src/main/res/drawable/ic_baseline_play_circle_filled_24.xml" value="0.24166666666666667" />
+        <entry key="app/src/main/res/drawable/ic_baseline_play_circle_outline_24.xml" value="0.2388888888888889" />
+        <entry key="app/src/main/res/drawable/ic_launcher_background.xml" value="0.1962962962962963" />
+        <entry key="app/src/main/res/drawable/ic_outline_download_for_offline_24.xml" value="0.22592592592592592" />
+        <entry key="app/src/main/res/drawable/trending_gradient.xml" value="0.22962962962962963" />
+        <entry key="app/src/main/res/layout/activity_home.xml" value="0.16458333333333333" />
+        <entry key="app/src/main/res/layout/activity_main.xml" value="0.165" />
+        <entry key="app/src/main/res/layout/fragment_home.xml" value="0.14387031408308004" />
+        <entry key="app/src/main/res/layout/fragment_music_list.xml" value="0.25" />
+        <entry key="app/src/main/res/layout/fragment_music_player.xml" value="0.28229166666666666" />
+        <entry key="app/src/main/res/layout/fragment_my_music.xml" value="0.25" />
+        <entry key="app/src/main/res/layout/fragment_splash.xml" value="0.13728470111448834" />
+        <entry key="app/src/main/res/layout/music_item.xml" value="0.28229166666666666" />
+        <entry key="app/src/main/res/layout/music_options.xml" value="0.25" />
+        <entry key="app/src/main/res/layout/music_player_collapsed.xml" value="0.2953125" />
+        <entry key="app/src/main/res/layout/music_player_expanded.xml" value="0.25" />
+        <entry key="app/src/main/res/layout/music_player_mini.xml" value="0.25" />
+        <entry key="app/src/main/res/menu/bottom_navigation_menu.xml" value="0.26851851851851855" />
+        <entry key="app/src/main/res/menu/navigation_items.xml" value="0.2824074074074074" />
+        <entry key="app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml" value="0.22685185185185186" />
+        <entry key="app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml" value="0.22685185185185186" />
       </map>
     </option>
   </component>
