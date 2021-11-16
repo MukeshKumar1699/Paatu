@@ -23,6 +23,7 @@
         android:layout_height="0dp"
         android:id="@+id/coo_bottomSheet"
         app:layout_constraintBottom_toTopOf="@id/bot_nav"
+        android:visibility="visible"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">

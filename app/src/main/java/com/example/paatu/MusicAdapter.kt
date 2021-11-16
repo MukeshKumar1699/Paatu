@@ -66,7 +66,7 @@ class MusicViewHolder(val binding: MusicItemBinding): RecyclerView.ViewHolder(bi
 //            }
 
             clItem.setOnClickListener {
-                itemClickListener.onItemClicked(adapterPosition, music)
+                itemClickListener.onItemClicked(adapterPosition)
             }
 
         }

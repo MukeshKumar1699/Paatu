@@ -63,7 +63,6 @@
         android:layout_height="wrap_content"
         android:max="100"
         android:orientation="horizontal"
-        android:progress="10"
         android:progressTint="@color/white"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="@id/iv_logo"
@@ -89,6 +88,7 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:weightSum="5"
+        android:padding="@dimen/dp_15"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@id/tv_endTime"
         app:layout_constraintStart_toEndOf="@id/tv_startTime"
@@ -105,24 +105,28 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:id="@+id/iv_skipPrev"
             android:src="@drawable/ic_baseline_skip_previous_24" />
 
         <ImageView
             android:layout_width="@dimen/dp_30"
             android:layout_height="@dimen/dp_30"
             android:layout_weight="1"
+            android:id="@+id/iv_musicPlayPauseExtended"
             android:src="@drawable/play_button" />
 
         <ImageView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:id="@+id/iv_skipNext"
             android:src="@drawable/ic_baseline_skip_next_24" />
 
         <ImageView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:id="@+id/iv_PlayOption"
             android:src="@drawable/ic_baseline_repeat_24" />
 
     </LinearLayout>

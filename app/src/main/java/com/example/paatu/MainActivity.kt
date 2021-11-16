@@ -1,28 +1,30 @@
 package com.example.paatu
 
 import android.app.ActivityManager
+import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
+import android.media.MediaPlayer
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.view.View
-import androidx.activity.viewModels
+import android.widget.SeekBar
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
-import androidx.core.os.bundleOf
 import androidx.navigation.Navigation
+import androidx.navigation.findNavController
 import androidx.navigation.ui.setupWithNavController
 import com.example.paatu.databinding.ActivityMainBinding
 import com.google.android.material.bottomsheet.BottomSheetBehavior
+import java.util.concurrent.TimeUnit
 
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
-
-    private val viewModel: ItemViewModel by viewModels()
-    private lateinit var bottomSheetBehavior : BottomSheetBehavior<ConstraintLayout>
+    private lateinit var bottomSheetBehavior: BottomSheetBehavior<ConstraintLayout>
 
 
     @RequiresApi(Build.VERSION_CODES.O)
@@ -32,51 +34,42 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        getIntentData()
-        viewModel.selectedItem.observe(this, { music ->
+        observeLiveData()
+        initBottomSheet()
+    }
 
-            if(music != null) {
+    private fun initPlayPause() {
 
-                if(foregroundServiceRunning()) {
-                    val intent = Intent(this@MainActivity, MusicService::class.java)
-                    stopService(intent)
-                }
-                val intent = Intent(this@MainActivity, MusicService::class.java)
+        Log.d(TAG, "updateUI: playButton CLicked")
 
-                intent.putExtra("SongUri", music.songURI.toString())
-                intent.putExtra("SongName", music.name)
-                intent.setAction("PLAY")
-                isPlaying = true
-                startService(intent)
+        if (mediaPlayer.isPlaying) {
+            mediaPlayer.pause()
+            binding.incBottomSheetLayout.layMusicCollapsed.ivMusicPlayPause.setImageResource(R.drawable.play_button)
+            binding.incBottomSheetLayout.ivMusicPlayPauseExtended.setImageResource(R.drawable.play_button)
+        } else {
+            mediaPlayer.start()
+            binding.incBottomSheetLayout.layMusicCollapsed.ivMusicPlayPause.setImageResource(R.drawable.pause_button)
+            binding.incBottomSheetLayout.ivMusicPlayPauseExtended.setImageResource(R.drawable.pause_button)
+        }
+    }
 
-                binding.apply {
+    private fun observeLiveData() {
 
-                    binding.incBottomSheetLayout.apply {
-                        setVisible(true)
-                        layMusicCollapsed.tvMusicTitle.text = music.name
-                        tvSongTitle.text = music.name
-
-                        tvEndTime.text = (music.duration / 1000).toString()
-
-                        layMusicCollapsed.ivMusicPlayPause.setOnClickListener {
-
-                            if(isPlaying) {
-
-                                val pauseIntent = Intent(this@MainActivity, MusicService::class.java)
-                                intent.setAction("PAUSE")
-                                startService(pauseIntent)
-                                isPlaying = false
-                            }
-                        }
-
-                    }
-
-                }
+        MusicService.musicLiveData.observe(this, {
+            it?.let {
+                updateUI(it)
             }
-
         })
 
-         bottomSheetBehavior =
+        MusicService.musicPositionLiveData.observe(this, {
+            it?.let {
+                updateProgress(it)
+            }
+        })
+    }
+
+    private fun initBottomSheet() {
+        bottomSheetBehavior =
             BottomSheetBehavior.from(binding.incBottomSheetLayout.layMusicExpanded).apply {
                 this.isDraggable = true
 
@@ -91,18 +84,21 @@ class MainActivity : AppCompatActivity() {
                     }
                     BottomSheetBehavior.STATE_EXPANDED -> {
                         binding.botNav.visibility = View.GONE
-                        binding.incBottomSheetLayout.layMusicCollapsed.clCollapsed.visibility = View.GONE
+                        binding.incBottomSheetLayout.layMusicCollapsed.clCollapsed.visibility =
+                            View.GONE
                     }
                     BottomSheetBehavior.STATE_COLLAPSED -> {
                         binding.botNav.visibility = View.VISIBLE
-                        binding.incBottomSheetLayout.layMusicCollapsed.clCollapsed.visibility = View.VISIBLE
+                        binding.incBottomSheetLayout.layMusicCollapsed.clCollapsed.visibility =
+                            View.VISIBLE
 
                     }
                     BottomSheetBehavior.STATE_DRAGGING -> {
                     }
                     BottomSheetBehavior.STATE_SETTLING -> {
                         binding.botNav.visibility = View.GONE
-                        binding.incBottomSheetLayout.layMusicCollapsed.clCollapsed.visibility = View.GONE
+                        binding.incBottomSheetLayout.layMusicCollapsed.clCollapsed.visibility =
+                            View.GONE
 
                     }
                     BottomSheetBehavior.STATE_HALF_EXPANDED -> {
@@ -121,41 +117,172 @@ class MainActivity : AppCompatActivity() {
 
         val navController = Navigation.findNavController(this@MainActivity, R.id.nav_host_fragment)
         binding.botNav.setupWithNavController(navController)
+    }
+
+    private fun updateUI(music: Music) {
+
+        binding.cooBottomSheet.visibility = View.VISIBLE
+
+        binding.apply {
+
+            mediaPlayer = MusicService.mediaPlayer
+            initPlayPause()
+
+            binding.cooBottomSheet.visibility = View.VISIBLE
+            binding.incBottomSheetLayout.apply {
+
+                layMusicCollapsed.apply {
+
+                    tvMusicTitle.apply {
+                        text = music.name
+                    }
+                    ivLogo.apply {
+                        setImageResource(R.drawable.astronaut)
+                    }
+                    ivMusicPlayPause.apply {
+                        setImageResource(R.drawable.pause_button)
+                    }
+                    ivMusicPlayPause.apply {
+
+                    }.setOnClickListener {
+                        initPlayPause()
+                    }
+                }
+
+                tvSongTitle.apply {
+                    text = music.name
+                }
+                tvStartTime.apply {
+                    text = timeFormat(0)
+                }
+                tvEndTime.apply {
+                    text = timeFormat(music.duration)
+                }
+                seekDuration.apply {
+                    max = music.duration
+                }.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+                    override fun onProgressChanged(
+                        seekBar: SeekBar?,
+                        progress: Int,
+                        fromUser: Boolean
+                    ) {
+                    }
+
+                    override fun onStartTrackingTouch(seekBar: SeekBar?) {
+                    }
+
+                    override fun onStopTrackingTouch(seekBar: SeekBar?) {
+
+                    }
+
+                })
+
+                ivSkipPrev.apply {
+
+                }.setOnClickListener {
+
+                }
+
+                ivMusicPlayPauseExtended.apply {
+                    setImageResource(R.drawable.pause_button)
+                }.setOnClickListener {
+                    initPlayPause()
+                }
+
+                ivSkipNext.apply {
+
+                }.setOnClickListener {
+
+                }
+
+            }
+
+        }
 
     }
 
-    override fun onBackPressed() {
+    private fun updateProgress(progress: Int) {
+        binding.incBottomSheetLayout.seekDuration.progress = progress
+        binding.incBottomSheetLayout.tvStartTime.text = timeFormat(progress)
+    }
 
-        if(bottomSheetBehavior.state == BottomSheetBehavior.STATE_EXPANDED) {
-            bottomSheetBehavior.state = BottomSheetBehavior.STATE_COLLAPSED
-        }
-        else {
-            super.onBackPressed()
+    private fun timeFormat(time: Int): String {
+
+        if (TimeUnit.MILLISECONDS.toHours(time.toLong()).toInt() == 0) {
+
+            return String.format(
+                "%d : %d",
+                TimeUnit.MILLISECONDS.toMinutes(time.toLong()),
+                TimeUnit.MILLISECONDS.toSeconds(time.toLong()) -
+                        TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(time.toLong()))
+            )
+        } else {
+            return String.format(
+                "%d : %d : %d",
+                TimeUnit.MILLISECONDS.toHours(time.toLong()),
+                TimeUnit.MILLISECONDS.toMinutes(time.toLong()),
+                TimeUnit.MILLISECONDS.toSeconds(time.toLong()) -
+                        TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(time.toLong()))
+            )
         }
     }
 
     fun foregroundServiceRunning(): Boolean {
-        val activityManager: ActivityManager = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        val activityManager: ActivityManager =
+            this.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
 
-        for (service: ActivityManager.RunningServiceInfo in activityManager.getRunningServices(Integer.MAX_VALUE)) {
+        for (service: ActivityManager.RunningServiceInfo in activityManager.getRunningServices(
+            Integer.MAX_VALUE
+        )) {
 
-            if(MusicService::class.java.name.equals(service.service.className)) {
+            if (MusicService::class.java.name.equals(service.service.className)) {
                 return true
             }
         }
         return false
     }
 
-    fun getIntentData() {
-        var progress = intent.getStringExtra("MediaPlayerProgress")
-        if (progress != null) {
-            binding.incBottomSheetLayout.seekDuration.progress = progress.toInt()
+    fun findFragmentVisibility(): Boolean {
+
+        if (findNavController(R.id.nav_host_fragment).currentDestination?.id == R.id.homeFragment) {
+            Log.d(
+                TAG,
+                "findFragmentVisibility: " + findNavController(R.id.nav_host_fragment).currentDestination?.id
+            )
+            return true
+        }
+        return false
+    }
+
+    override fun onBackPressed() {
+
+        if (bottomSheetBehavior.state == BottomSheetBehavior.STATE_EXPANDED) {
+            bottomSheetBehavior.state = BottomSheetBehavior.STATE_COLLAPSED
+        } else if (findFragmentVisibility() && foregroundServiceRunning()) {
+
+            val alertDialogBuilder = AlertDialog.Builder(this@MainActivity)
+            alertDialogBuilder.setMessage("Want to play music in background?")
+                .setCancelable(false)
+                .setPositiveButton("Yes") { dialog, which ->
+                    super.onBackPressed()
+                }
+                .setNegativeButton("No") { dialog, which ->
+                    val intent = Intent(this, MusicService::class.java)
+                    stopService(intent)
+                    super.onBackPressed()
+                }
+
+            val alert = alertDialogBuilder.create()
+            alert.show()
+
+        } else {
+            super.onBackPressed()
         }
     }
 
-
     companion object {
-        var isPlaying: Boolean = false
+        private const val TAG = "MainActivity"
+        private lateinit var mediaPlayer: MediaPlayer
     }
 
 }

@@ -10,7 +10,6 @@ class MusicListViewModel(private val repository: MusicListRepository) : ViewMode
 
      lateinit var musicLiveData: LiveData<List<Music>>
 
-
     fun getSongsList(contentResolver: ContentResolver) {
        musicLiveData = repository.getSongsFromContentProvider(contentResolver)
     }

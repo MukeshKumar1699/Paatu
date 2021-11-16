@@ -1,6 +1,8 @@
 package com.example.paatu
 
-import android.Manifest
+import android.app.ActivityManager
+import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -12,12 +14,9 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.example.paatu.Constants.PERMISSIONS_LIST
+import com.example.paatu.Constants.REQ_MULTIPLE_PERMISSIONS_CODE
 import com.example.paatu.databinding.FragmentMusicListBinding
-
-import android.app.Activity
-import androidx.fragment.app.activityViewModels
-import java.lang.ClassCastException
-
 
 class MusicListFragment : Fragment(), MusicItemClickListener {
 
@@ -25,11 +24,12 @@ class MusicListFragment : Fragment(), MusicItemClickListener {
 
     private val musicList: ArrayList<Music> = ArrayList()
 
+    private val APPPERMISSIONSTATUS = "APPPERMISSIONSTATUS"
+    private val sharedPreferences = PreferenceHelper()
+
     private val viewModel: MusicListViewModel by viewModels {
         MusicListViewModelFactory((activity?.application as AppApplication).musicListRepository)
     }
-
-    private val sharedViewModel: ItemViewModel by activityViewModels()
 
     private lateinit var musicAdapter: MusicAdapter
 
@@ -49,19 +49,30 @@ class MusicListFragment : Fragment(), MusicItemClickListener {
         setRecycler()
         observeLiveData()
         initViews()
-
     }
 
     private fun getAppPermission() {
 
+        sharedPreferences.getSharedPreference(requireContext())
+
         val isPermissionGranted = checkPermission()
 
         if (isPermissionGranted) {
+            sharedPreferences.writeAppPermissionStatusToPreference(
+                requireContext(),
+                APPPERMISSIONSTATUS,
+                true
+            )
             getMusicFromContentProvider()
 
         } else if (!isPermissionGranted) {
+            sharedPreferences.writeAppPermissionStatusToPreference(
+                requireContext(),
+                APPPERMISSIONSTATUS,
+                false
+            )
             requestPermissions(
-                permissionList,
+                PERMISSIONS_LIST,
                 REQ_MULTIPLE_PERMISSIONS_CODE
             )
         }
@@ -70,7 +81,7 @@ class MusicListFragment : Fragment(), MusicItemClickListener {
 
     private fun checkPermission(): Boolean {
 
-        for (i in permissionList) {
+        for (i in PERMISSIONS_LIST) {
 
             if (checkSelfPermission(
                     requireContext(),
@@ -101,6 +112,11 @@ class MusicListFragment : Fragment(), MusicItemClickListener {
             }
 
             if (isGranted) {
+                sharedPreferences.writeAppPermissionStatusToPreference(
+                    requireContext(),
+                    APPPERMISSIONSTATUS,
+                    true
+                )
                 getMusicFromContentProvider()
             } else {
                 Toast.makeText(
@@ -124,13 +140,22 @@ class MusicListFragment : Fragment(), MusicItemClickListener {
                 findNavController().popBackStack()
             }
 
+            ivSearch.setOnClickListener {
+                findNavController().navigate(R.id.action_musicListFragment_to_searchFragment)
+            }
+
             tvMusicOption.apply {
                 if (!musicList.isEmpty()) {
                     text = musicList[musicList.lastIndex].name
                 }
             }
+
             tvSongListSize.apply {
                 text = musicList.size.toString()
+            }
+
+            btnPlayAll.setOnClickListener {
+                startMusicService(0, Constants.PLAY_ALL_MUSIC)
             }
         }
     }
@@ -170,21 +195,51 @@ class MusicListFragment : Fragment(), MusicItemClickListener {
         return returnList
     }*/
 
-    override fun onItemClicked(position: Int, music: Music) {
-        Toast.makeText(requireContext(), "CLicked", Toast.LENGTH_SHORT).show()
-        sharedViewModel.selectItem(music)
+    override fun onItemClicked(position: Int) {
+        startMusicService(position, Constants.PLAY_MUSIC)
     }
 
-    override fun onPlayAllClicked(musicList: List<Music>) {
+    private fun startMusicService(item: Int, action: String) {
+
+        if (musicList.size != 0) {
+
+            if (foregroundServiceRunning()) {
+                val intent = Intent(requireContext(), MusicService::class.java)
+                requireContext().stopService(intent)
+            }
+            val intent = Intent(requireContext(), MusicService::class.java)
+
+            when (action) {
+
+                Constants.PLAY_MUSIC -> {
+                    intent.putParcelableArrayListExtra("SongList", musicList)
+                    intent.putExtra("ItemPosition", item)
+                    intent.setAction(Constants.PLAY_MUSIC)
+                }
+
+                Constants.PLAY_ALL_MUSIC -> {
+                    intent.putParcelableArrayListExtra("SongList", musicList)
+                    intent.setAction(Constants.PLAY_ALL_MUSIC)
+                }
+            }
+            requireContext().startService(intent)
+        }
+
     }
 
-    companion object {
+    fun foregroundServiceRunning(): Boolean {
+        val activityManager: ActivityManager =
+            requireActivity().getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
 
-        private val permissionList = arrayOf(
-            Manifest.permission.READ_EXTERNAL_STORAGE,
-        )
+        for (service: ActivityManager.RunningServiceInfo in activityManager.getRunningServices(
+            Integer.MAX_VALUE
+        )) {
 
-        private const val REQ_MULTIPLE_PERMISSIONS_CODE = 100
+            if (MusicService::class.java.name.equals(service.service.className)) {
+                return true
+            }
+        }
+        return false
     }
 
 }

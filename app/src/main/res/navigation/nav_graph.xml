@@ -14,11 +14,24 @@
         android:id="@+id/myMusicFragment"
         android:name="com.example.paatu.MyMusicFragment"
         android:label="fragment_my_music"
-        tools:layout="@layout/fragment_my_music" />
+        tools:layout="@layout/fragment_my_music" >
+        <action
+            android:id="@+id/action_myMusicFragment_to_musicListFragment"
+            app:destination="@id/musicListFragment" />
+    </fragment>
     <fragment
         android:id="@+id/musicListFragment"
         android:name="com.example.paatu.MusicListFragment"
         android:label="fragment_music_list"
-        tools:layout="@layout/fragment_music_list" />
+        tools:layout="@layout/fragment_music_list" >
+        <action
+            android:id="@+id/action_musicListFragment_to_searchFragment"
+            app:destination="@id/searchFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/searchFragment"
+        android:name="com.example.paatu.SearchFragment"
+        android:label="fragment_search"
+        tools:layout="@layout/fragment_search" />
 
 </navigation>

@@ -24,14 +24,6 @@
         </activity>
 
         <service android:name=".MusicService"/>
-
-        <receiver android:name=".MusicProgressReceiver"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="com.example.paatu.CUSTOM_INTENT"/>
-            </intent-filter>
-        </receiver>
-
     </application>
 
 </manifest>

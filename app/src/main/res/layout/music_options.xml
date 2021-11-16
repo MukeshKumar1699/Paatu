@@ -9,7 +9,7 @@
         android:layout_width="@dimen/dp_50"
         android:layout_height="@dimen/dp_50"
         android:background="@color/white"
-        android:id="@+id/iv_logo"
+        android:id="@+id/siv_logo"
         app:shapeAppearanceOverlay="@style/circular"
         android:src="@drawable/ic_baseline_play_circle_filled_24"
         app:layout_constraintStart_toStartOf="parent"
@@ -21,27 +21,29 @@
         android:text="sample"
         android:textStyle="bold"
         android:textColor="@color/white"
+        android:id="@+id/tv_title"
         android:textSize="@dimen/sp_20"
         android:layout_marginStart="@dimen/dp_15"
-        app:layout_constraintStart_toEndOf="@id/iv_logo"
-        app:layout_constraintTop_toTopOf="@id/iv_logo"/>
+        app:layout_constraintStart_toEndOf="@id/siv_logo"
+        app:layout_constraintTop_toTopOf="@id/siv_logo"/>
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:textSize="@dimen/sp_15"
         android:layout_marginStart="@dimen/dp_15"
+        android:id="@+id/tv_songListSize"
         android:text="sample"
         android:textColor="@android:color/darker_gray"
-        app:layout_constraintStart_toEndOf="@id/iv_logo"
-        app:layout_constraintBottom_toBottomOf="@id/iv_logo"/>
+        app:layout_constraintStart_toEndOf="@id/siv_logo"
+        app:layout_constraintBottom_toBottomOf="@id/siv_logo"/>
 
     <ImageView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:src="@drawable/ic_baseline_arrow_forward_ios_24"
-        app:layout_constraintTop_toTopOf="@id/iv_logo"
-        app:layout_constraintBottom_toBottomOf="@id/iv_logo"
+        app:layout_constraintTop_toTopOf="@id/siv_logo"
+        app:layout_constraintBottom_toBottomOf="@id/siv_logo"
         app:layout_constraintEnd_toEndOf="parent"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

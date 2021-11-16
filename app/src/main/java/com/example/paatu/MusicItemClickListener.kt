@@ -2,7 +2,6 @@ package com.example.paatu
 
 interface MusicItemClickListener {
 
-    fun onItemClicked(position: Int, music: Music)
+    fun onItemClicked(position: Int)
 
-    fun onPlayAllClicked(musicList: List<Music>)
 }

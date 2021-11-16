@@ -5,39 +5,67 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Color
 import android.media.MediaPlayer
-import android.net.Uri
 import android.os.Build
+import android.os.Handler
 import android.os.IBinder
-import android.view.View
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
-
+import androidx.lifecycle.MutableLiveData
 
 class MusicService : Service() {
 
-    private lateinit var mediaPlayer: MediaPlayer
+    private var musicList: ArrayList<Music> = ArrayList()
 
     @RequiresApi(api = Build.VERSION_CODES.O)
     override fun onCreate() {
         super.onCreate()
     }
 
-    private fun initMusic(songUri: Uri) {
+     fun initMusic(item: Int) {
 
-        if (this::mediaPlayer.isInitialized) {
+        if (mediaPlayer.isPlaying) {
             mediaPlayer.stop()
             mediaPlayer.release()
-            mediaPlayer = MediaPlayer.create(this, songUri)
+            mediaPlayer = MediaPlayer.create(this, musicList[item].songURI)
             mediaPlayer.start()
-            broadcastIntent()
+
         } else {
-            mediaPlayer = MediaPlayer.create(this, songUri)
+            mediaPlayer = MediaPlayer.create(this, musicList[item].songURI)
             mediaPlayer.start()
+        }
+
+        updateToUI()
+
+        mediaPlayer.setOnCompletionListener {
+
+            if (currentItemPlaying + 1 < musicList.size) {
+                currentItemPlaying++
+                initMusic(currentItemPlaying)
+            } else {
+                mNotificationManager?.cancel(Constants.NOTIFICATION_ID)
+                stopForeground(true)
+                stopSelf()
+            }
         }
 
     }
 
+    private fun updateToUI() {
+
+        val mSeekbarUpdateHandler = Handler()
+        val mUpdateSeekbar: Runnable = object : Runnable {
+            override fun run() {
+                musicPositionLiveData.postValue(mediaPlayer.currentPosition)
+                mSeekbarUpdateHandler.postDelayed(this, 50)
+            }
+        }
+        musicLiveData.postValue(musicList[currentItemPlaying])
+        mSeekbarUpdateHandler.postDelayed(mUpdateSeekbar, 0);
+
+        generateForegroundNotification(musicList[currentItemPlaying].name)
+    }
 
     override fun onBind(intent: Intent?): IBinder? {
         return null
@@ -46,23 +74,36 @@ class MusicService : Service() {
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
 
-        val song = intent?.getStringExtra("SongUri")
-        val songName = intent?.getStringExtra("SongName")
 
-        song?.let {
-            val songUri: Uri = Uri.parse(song)
-            generateForegroundNotification(songName)
+        musicList = intent?.getParcelableArrayListExtra<Music>("SongList") as ArrayList<Music>
 
-            if (intent.action.equals("PLAY")) {
-                initMusic(songUri)
-            } else if (intent.action.equals("PAUSE")) {
-                pauseMusic()
+        when (intent.action) {
+
+            Constants.PLAY_MUSIC -> {
+
+                currentItemPlaying = intent.getIntExtra("ItemPosition", 0)
+                initMusic(currentItemPlaying)
+            }
+
+            Constants.PLAY_ALL_MUSIC -> {
+                initMusic(currentItemPlaying)
+            }
+
+            Constants.SKIP_PREVIOUS -> {
+                if (currentItemPlaying > 0) {
+                    currentItemPlaying--
+                    initMusic(currentItemPlaying)
+                }
+            }
+
+            Constants.SKIP_NEXT -> {
+                currentItemPlaying++
+                initMusic(currentItemPlaying)
             }
         }
 
         return START_STICKY
     }
-
 
     private fun generateForegroundNotification(songName: String?) {
 
@@ -72,9 +113,16 @@ class MusicService : Service() {
         )
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val intentMainLanding = Intent(this, MainActivity::class.java)
+            val intentMainLanding = Intent(this, MainActivity::class.java).apply {
+                this.flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
+            }
             val pendingIntent =
-                PendingIntent.getActivity(this, 0, intentMainLanding, 0)
+                PendingIntent.getActivity(
+                    this,
+                    0,
+                    intentMainLanding,
+                    PendingIntent.FLAG_UPDATE_CURRENT
+                )
             iconNotification = BitmapFactory.decodeResource(resources, R.mipmap.ic_launcher)
 
             if (mNotificationManager == null) {
@@ -88,10 +136,12 @@ class MusicService : Service() {
                 )
                 val notificationChannel =
                     NotificationChannel(
-                        "service_channel", "Service Notifications",
+                        Constants.NOTIFICATION_CHANNEL_ID,
+                        Constants.NOTIFICATION_CHANNEL_NAME,
                         NotificationManager.IMPORTANCE_MIN
                     )
-                notificationChannel.enableLights(false)
+                notificationChannel.enableLights(true)
+                notificationChannel.lightColor = Color.GREEN
                 notificationChannel.lockscreenVisibility = Notification.VISIBILITY_SECRET
                 mNotificationManager?.createNotificationChannel(notificationChannel)
             }
@@ -99,32 +149,29 @@ class MusicService : Service() {
             val builder = NotificationCompat.Builder(this, "service_channel")
 
             //Prev intent
-            val prevIntent = Intent()
-            prevIntent.action = "Prev"
-            val pendingIntentPrev: PendingIntent = PendingIntent.getBroadcast(
+            intentMainLanding.action = Constants.SKIP_PREVIOUS
+            val pendingIntentPrev: PendingIntent = PendingIntent.getActivity(
                 this,
-                12345,
-                prevIntent,
+                0,
+                intentMainLanding,
                 PendingIntent.FLAG_UPDATE_CURRENT
             )
 
             //Play intent
-            val playIntent = Intent()
-            playIntent.action = "Prev"
-            val pendingIntentPlay: PendingIntent = PendingIntent.getBroadcast(
+            intentMainLanding.action = Constants.PLAY_MUSIC
+            val pendingIntentPlay: PendingIntent = PendingIntent.getActivity(
                 this,
-                12345,
-                prevIntent,
+                0,
+                intentMainLanding,
                 PendingIntent.FLAG_UPDATE_CURRENT
             )
 
             //Next intent
-            val nextIntent = Intent()
-            nextIntent.action = "Prev"
-            val pendingIntentNext: PendingIntent = PendingIntent.getBroadcast(
+            intentMainLanding.action = Constants.SKIP_NEXT
+            val pendingIntentNext: PendingIntent = PendingIntent.getActivity(
                 this,
-                12345,
-                prevIntent,
+                0,
+                intentMainLanding,
                 PendingIntent.FLAG_UPDATE_CURRENT
             )
 
@@ -132,6 +179,7 @@ class MusicService : Service() {
                 .setContentTitle(songName)
                 .setTicker(songName)
                 .setContentText("Touch to open")
+                .setColor(resources.getColor(R.color.purple_200))
                 .setSmallIcon(R.drawable.ic_launcher_foreground)
                 .setLargeIcon(astronautImage)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
@@ -140,27 +188,14 @@ class MusicService : Service() {
                 .addAction(R.drawable.ic_baseline_skip_previous_24, "PLAY", pendingIntentPlay)
                 .addAction(R.drawable.ic_baseline_skip_previous_24, "NEXT", pendingIntentNext)
 
-
             if (iconNotification != null) {
                 builder.setLargeIcon(Bitmap.createScaledBitmap(iconNotification!!, 128, 128, false))
             }
-            builder.color = resources.getColor(R.color.purple_200)
             notification = builder.build()
-            startForeground(mNotificationId, notification)
+            startForeground(Constants.NOTIFICATION_ID, notification)
         }
     }
 
-
-    fun broadcastIntent() {
-        val intent = Intent()
-        intent.action = "com.tutorialspoint.CUSTOM_INTENT"
-        intent.putExtra("MediaPlayerProgress", mediaPlayer.currentPosition.toString())
-        sendBroadcast(intent)
-    }
-
-    fun pauseMusic() {
-        mediaPlayer.pause()
-    }
 
     override fun onDestroy() {
         super.onDestroy()
@@ -172,10 +207,14 @@ class MusicService : Service() {
         //Notification for ON-going
         private var iconNotification: Bitmap? = null
         private var notification: Notification? = null
-        var mNotificationManager: NotificationManager? = null
-        private val mNotificationId = 123
-    }
+        private var mNotificationManager: NotificationManager? = null
 
+        var mediaPlayer = MediaPlayer()
+        val musicLiveData = MutableLiveData<Music>()
+        val musicPositionLiveData = MutableLiveData<Int>()
+
+        var currentItemPlaying: Int = 0
+    }
 
 }
 
