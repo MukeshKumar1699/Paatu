@@ -34,6 +34,7 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        visibleBottomSheet(false)
         observeLiveData()
         initBottomSheet()
     }
@@ -58,6 +59,7 @@ class MainActivity : AppCompatActivity() {
         MusicService.musicLiveData.observe(this, {
             it?.let {
                 updateUI(it)
+                visibleBottomSheet(true)
             }
         })
 
@@ -66,6 +68,16 @@ class MainActivity : AppCompatActivity() {
                 updateProgress(it)
             }
         })
+    }
+
+    private fun visibleBottomSheet(visibility: Boolean) {
+
+        if(visibility) {
+            binding.incBottomSheetLayout.layMusicExpanded.visibility = View.VISIBLE
+        }else {
+            binding.incBottomSheetLayout.layMusicExpanded.visibility = View.GONE
+
+        }
     }
 
     private fun initBottomSheet() {
@@ -126,7 +138,6 @@ class MainActivity : AppCompatActivity() {
         binding.apply {
 
             mediaPlayer = MusicService.mediaPlayer
-            initPlayPause()
 
             binding.cooBottomSheet.visibility = View.VISIBLE
             binding.incBottomSheetLayout.apply {
@@ -160,23 +171,7 @@ class MainActivity : AppCompatActivity() {
                 }
                 seekDuration.apply {
                     max = music.duration
-                }.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-                    override fun onProgressChanged(
-                        seekBar: SeekBar?,
-                        progress: Int,
-                        fromUser: Boolean
-                    ) {
-                    }
-
-                    override fun onStartTrackingTouch(seekBar: SeekBar?) {
-                    }
-
-                    override fun onStopTrackingTouch(seekBar: SeekBar?) {
-
-                    }
-
-                })
-
+                }
                 ivSkipPrev.apply {
 
                 }.setOnClickListener {
@@ -227,7 +222,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    fun foregroundServiceRunning(): Boolean {
+    private fun foregroundServiceRunning(): Boolean {
         val activityManager: ActivityManager =
             this.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
 
@@ -242,7 +237,7 @@ class MainActivity : AppCompatActivity() {
         return false
     }
 
-    fun findFragmentVisibility(): Boolean {
+    private fun findFragmentVisibility(): Boolean {
 
         if (findNavController(R.id.nav_host_fragment).currentDestination?.id == R.id.homeFragment) {
             Log.d(
@@ -263,10 +258,10 @@ class MainActivity : AppCompatActivity() {
             val alertDialogBuilder = AlertDialog.Builder(this@MainActivity)
             alertDialogBuilder.setMessage("Want to play music in background?")
                 .setCancelable(false)
-                .setPositiveButton("Yes") { dialog, which ->
+                .setPositiveButton("Yes") { _, _ ->
                     super.onBackPressed()
                 }
-                .setNegativeButton("No") { dialog, which ->
+                .setNegativeButton("No") { _, _ ->
                     val intent = Intent(this, MusicService::class.java)
                     stopService(intent)
                     super.onBackPressed()
